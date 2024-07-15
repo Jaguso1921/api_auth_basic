@@ -10,7 +10,7 @@ const login = async (email, password) => {
     if(!response || !bcrypt.compareSync(password, response.password)){
         return {
             code: 401,
-            message: 'Unauthorized'
+            message: 'No tiene autorizacion'
         }
     }
 
@@ -20,7 +20,7 @@ const login = async (email, password) => {
         name: response.name,
         email: response.email,
         id: response.id,
-        roles: ['user'],
+        roles: ['Usuario'],
         expiration: expiration,
     })).toString('base64');
 
@@ -48,7 +48,7 @@ const logout = async (token) => {
     session.save();
     return {
         code: 200,
-        message: 'Logged out'
+        message: 'Desconectado'
     };
 }
 
