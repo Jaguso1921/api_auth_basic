@@ -1,58 +1,57 @@
-import db from '../dist/db/models/index.js';
 import bcrypt from 'bcrypt';
+import db from '../dist/db/models/index.js';
 
-const login = async (email, password) => {
-    const response = await db.User.findOne({
-        where: {
-            email: email
-        }
+const signIn = async (email, password) => {
+    const user = await db.User.findOne({
+        where: { email: email }
     });
-    if(!response || !bcrypt.compareSync(password, response.password)){
+
+    if (!user || !bcrypt.compareSync(password, user.password)) {
         return {
             code: 401,
-            message: 'No tiene autorizacion'
-        }
+            message: 'Unauthorized access'
+        };
     }
 
-    const expiration = (new Date()).setHours((new Date()).getHours() + 1);
+    const expiryTime = (new Date()).setHours((new Date()).getHours() + 1);
 
-    const token = Buffer.from(JSON.stringify({
-        name: response.name,
-        email: response.email,
-        id: response.id,
-        roles: ['Usuario'],
-        expiration: expiration,
+    const authToken = Buffer.from(JSON.stringify({
+        name: user.name,
+        email: user.email,
+        id: user.id,
+        roles: ['User'],
+        expiration: expiryTime,
     })).toString('base64');
 
-    const session = {
-        id_user: response.id,
-        token: token,
-        expiration: expiration,
-    }
+    const newSession = {
+        id_user: user.id,
+        token: authToken,
+        expiration: expiryTime,
+    };
 
-    await db.Session.create(session);
+    await db.Session.create(newSession);
 
     return {
         code: 200,
-        message: token
+        message: authToken
     };
-}
+};
 
-const logout = async (token) => {
+const signOut = async (token) => {
     const session = await db.Session.findOne({
-        where: {
-            token: token
-        }
+        where: { token: token }
     });
+
     session.expiration = new Date();
-    session.save();
+    await session.save();
+
     return {
         code: 200,
-        message: 'Desconectado'
+        message: 'Logged out successfully'
     };
-}
+};
 
 export default {
-    login,
-    logout,
-}
+    signIn,
+    signOut,
+};
